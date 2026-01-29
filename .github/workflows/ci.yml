@@ -1,0 +1,176 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  variants-smoke:
+    name: Build stubs + build all variants (smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up jbang
+        uses: jbangdev/setup-jbang@v0.0.2
+
+      - name: Build stubs
+        run: ./compile-stubs.sh
+
+      - name: Package example for all variants
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+
+          jbang ./jpackxa.java \
+            examples/simple-java \
+            --directory dist \
+            --output hello \
+            --variants win32--x64 \
+            --variants darwin--x64 \
+            --variants darwin--arm64 \
+            --variants linux--x64 \
+            --variants linux--arm64 \
+            --variants linux--arm \
+            -- "java" "-cp" "{{app}}" "Hello"
+
+          for v in win32--x64 darwin--x64 darwin--arm64 linux--x64 linux--arm64 linux--arm; do
+            test -f "dist/hello--stub--${v}"
+          done
+
+      - name: Run Linux x64 packaged app
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$(./dist/hello--stub--linux--x64 CI)"
+          echo "$out"
+          echo "$out" | grep -F "Hello from packaged Java application!"
+          echo "$out" | grep -F "Arguments: CI"
+
+      - name: Upload stubs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stubs
+          path: stubs/
+          if-no-files-found: error
+
+  platform-matrix:
+    name: Package + run on ${{ matrix.name }}
+    needs: [variants-smoke]
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            runs_on: ubuntu-latest
+            variant: linux--x64
+            output: hello
+            run_cmd: ./dist/hello--stub--linux--x64 CI
+
+          # Hosted arm64 runners are not available in all orgs. If this fails to schedule,
+          # remove this entry.
+          - name: linux-arm64
+            runs_on: ubuntu-24.04-arm64
+            variant: linux--arm64
+            output: hello
+            run_cmd: ./dist/hello--stub--linux--arm64 CI
+
+          - name: macos-x64
+            runs_on: macos-13
+            variant: darwin--x64
+            output: hello
+            run_cmd: ./dist/hello--stub--darwin--x64 CI
+
+          - name: macos-arm64
+            runs_on: macos-14
+            variant: darwin--arm64
+            output: hello
+            run_cmd: ./dist/hello--stub--darwin--arm64 CI
+
+          - name: windows-x64
+            runs_on: windows-latest
+            variant: win32--x64
+            output: hello.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up jbang
+        uses: jbangdev/setup-jbang@v0.0.2
+
+      - name: Download stubs
+        uses: actions/download-artifact@v4
+        with:
+          name: stubs
+          path: stubs
+
+      - name: Compile example
+        working-directory: examples/simple-java
+        run: javac Hello.java
+
+      - name: Package example
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+
+          jbang ./jpackxa.java \
+            examples/simple-java \
+            --directory dist \
+            --output "${{ matrix.output }}" \
+            --variants "${{ matrix.variant }}" \
+            -- "java" "-cp" "{{app}}" "Hello"
+
+      - name: Run packaged app (unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$(${{ matrix.run_cmd }})"
+          echo "$out"
+          echo "$out" | grep -F "Hello from packaged Java application!"
+          echo "$out" | grep -F "Arguments: CI"
+
+      - name: Run packaged app (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $built = "dist\hello.exe--stub--win32--x64"
+          if (!(Test-Path $built)) { throw "Expected output not found: $built" }
+          $renamed = "dist\hello--stub--win32--x64.exe"
+          Move-Item -Force $built $renamed
+          $out = & $renamed CI
+          Write-Host $out
+          if ($out -notmatch "Hello from packaged Java application!") { throw "Missing expected greeting" }
+          if ($out -notmatch "Arguments: CI") { throw "Missing expected arguments line" }
+
