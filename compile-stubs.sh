@@ -8,8 +8,7 @@ STUB_GO="stub.go"
 STUBS_DIR="stubs"
 
 if [ ! -f "$STUB_GO" ]; then
-    echo "Error: stub.go not found. Please copy it from the original caxa project."
-    echo "You can find it at: https://github.com/leafac/caxa/blob/main/stubs/stub.go"
+    echo "Error: stub.go not found."
     exit 1
 fi
 
@@ -56,4 +55,4 @@ echo "CAXACAXACAXA" >> "$STUBS_DIR/stub--linux--arm"
 echo ""
 echo "Done! Stubs compiled to $STUBS_DIR/"
 echo ""
-echo "You can now use jbang-caxa. The stubs will be automatically found in the $STUBS_DIR/ directory."
+echo "You can now use jpackxa. The stubs will be automatically found in the $STUBS_DIR/ directory."

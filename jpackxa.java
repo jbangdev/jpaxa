@@ -33,8 +33,12 @@ public class jpackxa implements Runnable {
     @Parameters(index = "0", arity = "1", description = "The input directory to package")
     private Path input;
     
-    @Option(names = {"-o", "--output"}, required = true, description = "The path where the executable will be produced")
+    @Option(names = {"-o", "--output"}, required = true, description = "The path where the executable will be produced, if relative will be relative to the build directory")
     private Path output;
+
+    @Option(names = {"-d", "--directory"}, description = "The path where the executable will be produced", defaultValue = "jpackxa-output")
+    private Path build;
+
     
     @Option(names = {"-F", "--force"}, negatable = true, description = "Overwrite output if they exists. True by default.", defaultValue = "true", fallbackValue = "true")
     private boolean force = true;
@@ -54,7 +58,7 @@ public class jpackxa implements Runnable {
     @Option(names = {"-B", "--no-remove-build-directory"}, description = "Don't remove the build directory after the build")
     private boolean noRemoveBuildDirectory = false;
     
-    @Option(names = {"-m", "--uncompression-message"}, description = "A message to show when uncompressing")
+    @Option(names = {"-m", "--message"}, description = "A message to show when uncompressing")
     private String uncompressionMessage;
 
     @Option(names = {"--variants"}, description = "Variants to build, will default to current platform and architecture if not provided")
@@ -100,8 +104,12 @@ public class jpackxa implements Runnable {
             throw new IllegalArgumentException("Windows executable must end in '.exe'");
         }
         
+        output = build.resolve(output);
+        
         if (exists(output) && !force) {
             throw new IllegalArgumentException("Output already exists: %s, use --force to overwrite".formatted(output));
+        } else if (!exists(output)) {
+            createDirectories(output.getParent());
         }
         
         // Create build directory
@@ -243,7 +251,7 @@ public class jpackxa implements Runnable {
         // Generate shell stub script
         String stubScript = """
             #!/usr/bin/env sh
-            export JPACKXA_TEMPORARY_DIRECTORY="$(dirname $(mktemp))/caxa"
+            export JPACKXA_TEMPORARY_DIRECTORY="$(dirname $(mktemp))/jpackxa"
             export JPACKXA_EXTRACTION_ATTEMPT=-1
             while true
             do
@@ -263,29 +271,25 @@ public class jpackxa implements Runnable {
         if (uncompressionMessage != null) {
             stubScript += "    echo \"%s\" >&2\n".formatted(uncompressionMessage);
         }
-        int stubLines = stubScript.toString().split("\n").length + 1; // +1 for the tail command line
         stubScript += """
             mkdir -p "$JPACKXA_LOCK"
             mkdir -p "$JPACKXA_APPLICATION_DIRECTORY"
-            tail -n+%d "$0" | tar -xz -C "$JPACKXA_APPLICATION_DIRECTORY"
+            tail -n+__STUB_LINES__ "$0" | tar -xz -C "$JPACKXA_APPLICATION_DIRECTORY"
             rmdir "$JPACKXA_LOCK"
             break
           fi
         done
-        exec""".formatted(stubLines); // replaces %d
+        exec""";
 
         for (String cmdPart : command) {
-            if(verbose) {
-                System.out.println("Command part: " + cmdPart);
-            }
             String expanded = APP_PLACEHOLDER.matcher(cmdPart).replaceAll("\"\\$JPACKXA_APPLICATION_DIRECTORY\"");
-            if(verbose) {
-                System.out.println("Expanded: " + expanded);
-            }
             stubScript += " \"" + expanded + "\"";
         }
         stubScript += " \"$@\"\n";
-        
+
+        // Use split(..., -1) so trailing empty string is kept (Java drops it by default; caxa/JS does not)
+        stubScript = stubScript.replace("__STUB_LINES__", String.valueOf(stubScript.split("\n", -1).length));
+
         writeString(output, stubScript);
         
         // Make executable
@@ -480,7 +484,7 @@ public class jpackxa implements Runnable {
         try {
             InputStream is = getClass().getResourceAsStream("/stubs/" + stubName);
             if (is != null) {
-                Path tempStub = Files.createTempFile("caxa-stub-", "");
+                Path tempStub = Files.createTempFile("jpackxa-stub-", "");
                 copy(is, tempStub, StandardCopyOption.REPLACE_EXISTING);
                 tempStub.toFile().deleteOnExit();
                 return tempStub;

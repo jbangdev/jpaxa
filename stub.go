@@ -117,7 +117,7 @@ func main() {
 	}
 
 	expandedCommand := make([]string, len(footer.Command))
-	applicationDirectoryPlaceholderRegexp := regexp.MustCompile(`\{\{\s*caxa\s*\}\}`)
+	applicationDirectoryPlaceholderRegexp := regexp.MustCompile(`\{\{\s*app\s*\}\}`)
 	for key, commandPart := range footer.Command {
 		expandedCommand[key] = applicationDirectoryPlaceholderRegexp.ReplaceAllLiteralString(commandPart, applicationDirectory)
 	}
