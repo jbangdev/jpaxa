@@ -30,7 +30,7 @@ jobs:
           java-version: "17"
 
       - name: Set up jbang
-        uses: jbangdev/setup-jbang@v0.0.2
+        uses: jbangdev/setup-jbang@main
 
       - name: Build stubs
         run: ./compile-stubs.sh
@@ -123,7 +123,7 @@ jobs:
           java-version: "17"
 
       - name: Set up jbang
-        uses: jbangdev/setup-jbang@v0.0.2
+        uses: jbangdev/setup-jbang@main
 
       - name: Download stubs
         uses: actions/download-artifact@v4
