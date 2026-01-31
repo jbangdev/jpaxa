@@ -163,11 +163,11 @@ jobs:
       - name: Set up jbang
         uses: jbangdev/setup-jbang@main
 
-      - name: Download stubs
+      - name: Download hello
         uses: actions/download-artifact@v4
         with:
-          name: stubs
-          path: stubs
+          name: dist
+          path: dist/
 
       
 
