@@ -35,6 +35,14 @@ jobs:
       - name: Build stubs
         run: ./compile-stubs.sh
 
+      - name: Upload stubs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stubs
+          path: stubs/
+          if-no-files-found: error
+
+
       - name: Package example for all variants
         shell: bash
         run: |
@@ -57,6 +65,15 @@ jobs:
           for v in win32--x64 darwin--x64 darwin--arm64 linux--x64 linux--arm64 linux--arm; do
             test -f "dist/hello--stub--${v}"
           done
+
+          ls -la dist
+
+      - name: Upload hello artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hello
+          path: dist/
+          if-no-files-found: error
 
       - name: setup jpackxa exec
         shell: bash
@@ -87,20 +104,6 @@ jobs:
             --variants linux--arm64 \
             --variants linux--arm \
             -- "{{app}}/jbang"
-            
-      - name: Upload stubs artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: stubs
-          path: stubs/
-          if-no-files-found: error
-
-      - name: Upload hello artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: hello
-          path: dist/
-          if-no-files-found: error
 
       - name: Upload jpackxa-exec artifact
         uses: actions/upload-artifact@v4
