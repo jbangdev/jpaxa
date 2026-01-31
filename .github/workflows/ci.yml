@@ -128,11 +128,11 @@ jobs:
 
           # Hosted arm64 runners are not available in all orgs. If this fails to schedule,
           # remove this entry.
-          - name: linux-arm64
-            runs_on: ubuntu-24.04-arm64
-            variant: linux--arm64
-            output: hello
-            run_cmd: ./dist/hello--stub--linux--arm64 CI
+          #- name: linux-arm64
+          #  runs_on: ubuntu-24.04-arm64
+          #  variant: linux--arm64
+          #  output: hello
+          #  run_cmd: ./dist/hello--stub--linux--arm64 CI
 
           - name: macos-x64
             runs_on: macos-15-intel
@@ -170,6 +170,7 @@ jobs:
           path: dist/
 
       - name: make executable executable
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           set -euo pipefail
@@ -191,11 +192,11 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          $built = "dist\hello.exe--stub--win32--x64"
+          $built = "dist\hello--stub--win32--x64"
           if (!(Test-Path $built)) { throw "Expected output not found: $built" }
-          $renamed = "dist\hello--stub--win32--x64.exe"
-          Move-Item -Force $built $renamed
-          $out = & $renamed CI
+          $exe = "dist\hello--stub--win32--x64.exe"
+          Move-Item -Force $built $exe
+          $out = & $exe CI
           Write-Host $out
           if ($out -notmatch "Hello from packaged Java application!") { throw "Missing expected greeting" }
           if ($out -notmatch "Arguments: CI") { throw "Missing expected arguments line" }
