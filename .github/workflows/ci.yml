@@ -58,14 +58,16 @@ jobs:
             test -f "dist/hello--stub--${v}"
           done
 
-          - name: setup jpackxa exec
-          run: |
-            mkdir examples/jpackxa-exec
-            cd examples/jpackxa-exec
-            jbang wrapper install
-            # export jpackxa.java with the stubs included
-            jbang export fatjar --files=stubs/=../../stubs --force ../../jpackxa.java
-            ls -la 
+      - name: setup jpackxa exec
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir examples/jpackxa-exec
+          cd examples/jpackxa-exec
+          jbang wrapper install
+          # export jpackxa.java with the stubs included
+          jbang export fatjar --files=stubs/=../../stubs --force ../../jpackxa.java
+          ls -la 
   
       - name: Package jpackxa
         shell: bash
