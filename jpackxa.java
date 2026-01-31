@@ -91,6 +91,15 @@ public class jpackxa implements Runnable {
         return path.getFileName().toString().endsWith(suffix);
     }
 
+    private boolean isWindowsVariantStub(String stubName) {
+        // stubName is like "stub--win32--x64"
+        return stubName.startsWith("stub--win32--");
+    }
+
+    private String stripExeSuffix(String path) {
+        return path.endsWith(".exe") ? path.substring(0, path.length() - 4) : path;
+    }
+
     private void packageApplication() throws Exception {
         // Validate input
         if (!exists(input) || !isDirectory(input)) {
@@ -100,9 +109,6 @@ public class jpackxa implements Runnable {
         // Validate output
         String osName = System.getProperty("os.name").toLowerCase();
         boolean isWindows = osName.contains("win");
-        if (isWindows && !endsWith(output, ".exe")) {
-            throw new IllegalArgumentException("Windows executable must end in '.exe'");
-        }
         
         output = build.resolve(output);
         
@@ -179,7 +185,16 @@ public class jpackxa implements Runnable {
     
     private void createBinaryStub(Path buildDir, boolean isWindows, String stubName) throws Exception {
        
-        String outputPath = output.toString() + "--" + stubName;
+        String baseOutputPath = output.toString();
+        // For Windows variants, ensure the produced filename ends with ".exe" so it is directly runnable on Windows.
+        // We put ".exe" at the end (after the variant suffix), because Windows requires the extension at the end.
+        String outputPath;
+        if (isWindowsVariantStub(stubName)) {
+            baseOutputPath = stripExeSuffix(baseOutputPath);
+            outputPath = baseOutputPath + "--" + stubName + ".exe";
+        } else {
+            outputPath = baseOutputPath + "--" + stubName;
+        }
         Path stubPath;
         if (stub != null) {
             stubPath = stub;

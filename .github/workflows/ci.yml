@@ -35,11 +35,17 @@ jobs:
       - name: Build stubs
         run: ./compile-stubs.sh
 
+      - name: Tar stubs (preserve permissions)
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf stubs.tgz stubs
+
       - name: Upload stubs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: stubs
-          path: stubs/
+          name: stubs-tgz
+          path: stubs.tgz
           if-no-files-found: error
 
 
@@ -49,6 +55,9 @@ jobs:
           set -euo pipefail
           rm -rf dist
           mkdir -p dist
+
+          # Compile the example as part of the build (don't rely on a prebuilt class file)
+          javac examples/simple-java/Hello.java
 
           jbang ./jpackxa.java \
             examples/simple-java \
@@ -62,17 +71,20 @@ jobs:
             --variants linux--arm \
             -- "java" "-cp" "{{app}}" "Hello"
 
-          for v in win32--x64 darwin--x64 darwin--arm64 linux--x64 linux--arm64 linux--arm; do
+          test -f "dist/hello--stub--win32--x64.exe"
+          for v in darwin--x64 darwin--arm64 linux--x64 linux--arm64 linux--arm; do
             test -f "dist/hello--stub--${v}"
           done
 
           ls -la dist
 
+          tar -czf hello-dist.tgz dist
+
       - name: Upload hello artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hello
-          path: dist/
+          name: hello-dist-tgz
+          path: hello-dist.tgz
           if-no-files-found: error
 
       - name: setup jpackxa exec
@@ -105,11 +117,13 @@ jobs:
             --variants linux--arm \
             -- "{{app}}/jbang"
 
+          tar -czf jpackxa-exec-dist.tgz jpackxa-exec-dist
+
       - name: Upload jpackxa-exec artifact
         uses: actions/upload-artifact@v4
         with:
           name: jpackxa-exec
-          path: jpackxa-exec-dist/
+          path: jpackxa-exec-dist.tgz
           if-no-files-found: error
 
   platform-matrix:
@@ -163,24 +177,26 @@ jobs:
       - name: Set up jbang
         uses: jbangdev/setup-jbang@main
 
+      - name: Download stubs
+        uses: actions/download-artifact@v4
+        with:
+          name: stubs-tgz
+          path: .
+
       - name: Download hello
         uses: actions/download-artifact@v4
         with:
-          name: hello
-          path: dist/
-
-      - name: make executable executable
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x dist/hello--stub--${{ matrix.variant }}
+          name: hello-dist-tgz
+          path: .
 
       - name: Run packaged app (unix)
         if: runner.os != 'Windows'
         shell: bash
         run: |
           set -euo pipefail
+          tar -xzf stubs.tgz
+          tar -xzf hello-dist.tgz
+          chmod +x dist/hello--stub--${{ matrix.variant }} || true
           out="$(${{ matrix.run_cmd }})"
           echo "$out"
           echo "$out" | grep -F "Hello from packaged Java application!"
@@ -191,11 +207,10 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          New-Item -ItemType Directory -Force -Path dist | Out-Null
-          $built = "dist\hello--stub--win32--x64"
-          if (!(Test-Path $built)) { throw "Expected output not found: $built" }
+          tar -xzf stubs.tgz
+          tar -xzf hello-dist.tgz
           $exe = "dist\hello--stub--win32--x64.exe"
-          Move-Item -Force $built $exe
+          if (!(Test-Path $exe)) { throw "Expected output not found: $exe" }
           $out = & $exe CI
           Write-Host $out
           if ($out -notmatch "Hello from packaged Java application!") { throw "Missing expected greeting" }
