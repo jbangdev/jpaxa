@@ -141,15 +141,15 @@ jobs:
 
           - name: macos-x64
             runs_on: macos-15-intel
-            variant: darwin-x86_64
+            variant: osx-x86_64
             output: hello
-            run_cmd: ./dist/hello-darwin-x86_64 CI
+            run_cmd: ./dist/hello-osx-x86_64 CI
 
           - name: macos-arm64
             runs_on: macos-latest
-            variant: darwin-aarch64
+            variant: osx-aarch64
             output: hello
-            run_cmd: ./dist/hello-darwin-aarch64 CI
+            run_cmd: ./dist/hello-osx-aarch64 CI
 
           - name: windows-x64
             runs_on: windows-latest
