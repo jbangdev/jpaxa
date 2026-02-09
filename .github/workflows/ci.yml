@@ -60,10 +60,10 @@ jobs:
           javac examples/simple-java/Hello.java
 
           jbang ./jpaxa.java \
-            examples/simple-java \
             --directory dist \
             --output hello \
             --variants all \
+            examples/simple-java \
             -- "java" "-cp" "{{app}}" "Hello"
 
           test -f "dist/hello-windows-x86_64.exe"
