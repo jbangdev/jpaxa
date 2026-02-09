@@ -61,8 +61,8 @@ public class jpaxa implements Runnable {
     @Option(names = {"-m", "--message"}, description = "A message to show when uncompressing")
     private String uncompressionMessage;
 
-    @Option(names = {"--variants"}, arity = "0..*", description = "Variants to build, will default to current platform and architecture if not provided. If called without values, builds all known variants.")
-    private List<String> variants;
+    @Option(names = {"--variants"}, description = "Variants to build, will default to current platform and architecture if not provided. `all` to build all known variants.")
+    private List<String> variants = new ArrayList<>();
     
     @Option(names = {"--verbose"}, description = "Verbose output")
     private boolean verbose = false;
@@ -92,8 +92,8 @@ public class jpaxa implements Runnable {
     }
 
     private boolean isWindowsVariantStub(String variant) {
-        // variant is like "win32-x64"
-        return variant.startsWith("win32-");
+        // variant is like "windows-x86_64"
+        return variant.startsWith("windows-");
     }
 
     private String stripExeSuffix(String path) {
@@ -101,11 +101,12 @@ public class jpaxa implements Runnable {
     }
 
     private void packageApplication() throws Exception {
-        if (variants == null) {  // If no variants were provided, build the current platform and architecture
+        if (variants.isEmpty()) {  // If no variants were provided, build the current platform and architecture
             String stubName = getPlatform() + "-" + getArchitecture();
             variants = Arrays.asList(stubName);
-        } else if(variants.isEmpty()) { // If --variants was provided with values, build all known variants
-            variants = new ArrayList<>(getKnownVariants().keySet());
+        } else if(variants.contains("all")) { // If --variants was provided with values, build all known variants
+            variants.remove("all");
+            variants.addAll(getKnownVariants().keySet());
         }
         
         // Validate input
@@ -525,7 +526,7 @@ public class jpaxa implements Runnable {
     
     private String getPlatform() {
         String osName = System.getProperty("os.name").toLowerCase();
-        if (osName.contains("win")) return "win32";
+        if (osName.contains("win")) return "windows";
         if (osName.contains("mac")) return "darwin";
         if (osName.contains("nix") || osName.contains("nux")) return "linux";
         return "unknown";
@@ -533,8 +534,8 @@ public class jpaxa implements Runnable {
     
     private String getArchitecture() {
         String arch = System.getProperty("os.arch").toLowerCase();
-        if (arch.contains("amd64") || arch.contains("x86_64")) return "x64";
-        if (arch.contains("aarch64") || arch.contains("arm64")) return "arm64";
+        if (arch.contains("amd64") || arch.contains("x86_64")) return "x86_64";
+        if (arch.contains("aarch64") || arch.contains("arm64")) return "aarch64";
         if (arch.contains("arm")) return "arm";
         return "unknown";
     }
@@ -551,12 +552,12 @@ public class jpaxa implements Runnable {
     
     private Map<String, String> getKnownVariants() {
         Map<String, String> variants = new LinkedHashMap<>();
-        variants.put("win32-x64", "Windows (x64/AMD64)");
-        variants.put("darwin-x64", "macOS (Intel x64)");
-        variants.put("darwin-arm64", "macOS (Apple Silicon/ARM64)");
-        variants.put("linux-x64", "Linux (x64/AMD64)");
-        variants.put("linux-arm64", "Linux (ARM64/AArch64)");
-        variants.put("linux-arm", "Linux (ARM 32-bit)");
+        variants.put("windows-x86_64", "Windows (x64/AMD64)");
+        variants.put("osx-x86_64", "macOS (Intel x64)");
+        variants.put("osx-aarch64", "macOS (Apple Silicon/ARM64)");
+        variants.put("linux-x86_64", "Linux (x64/AMD64)");
+        variants.put("linux-aarch64", "Linux (ARM64/AArch64)");
+        variants.put("linux-arm", "Linux (ARM)");
         return variants;
     }
 }

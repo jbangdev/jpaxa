@@ -66,9 +66,9 @@ jobs:
             --variants
             -- "java" "-cp" "{{app}}" "Hello"
 
-          test -f "dist/hello--win32-x64.exe"
-          for v in darwin-x64 darwin-arm64 linux-x64 linux-arm64 linux-arm; do
-            test -f "dist/hello--${v}"
+          test -f "dist/hello-windows-x86_64.exe"
+          for v in darwin-x86_64 darwin-aarch64 linux-x86_64 linux-aarch64 linux-arm; do
+            test -f "dist/hello-${v}"
           done
 
           ls -la dist
@@ -104,11 +104,11 @@ jobs:
             examples/jpaxa-exec \
             --directory jpaxa-exec-dist \
             --output jpaxa-exec \
-            --variants win32-x64 \
-            --variants darwin-x64 \
-            --variants darwin-arm64 \
-            --variants linux-x64 \
-            --variants linux-arm64 \
+            --variants windows-x86_64 \
+            --variants darwin-x86_64 \
+            --variants darwin-aarch64 \
+            --variants linux-x86_64 \
+            --variants linux-aarch64 \
             --variants linux-arm \
             -- "{{app}}/jbang"
 
@@ -131,33 +131,33 @@ jobs:
         include:
           - name: linux-x64
             runs_on: ubuntu-latest
-            variant: linux-x64
+            variant: linux-x86_64
             output: hello
-            run_cmd: ./dist/hello-linux-x64 CI
+            run_cmd: ./dist/hello-linux-x86_64 CI
 
           # Hosted arm64 runners are not available in all orgs. If this fails to schedule,
           # remove this entry.
           #- name: linux-arm64
           #  runs_on: ubuntu-24.04-arm64
-          #  variant: linux-arm64
+          #  variant: linux-aarch64
           #  output: hello
-          #  run_cmd: ./dist/hello-linux-arm64 CI
+          #  run_cmd: ./dist/hello-linux-aarch64 CI
 
           - name: macos-x64
             runs_on: macos-15-intel
-            variant: darwin-x64
+            variant: darwin-x86_64
             output: hello
-            run_cmd: ./dist/hello-darwin-x64 CI
+            run_cmd: ./dist/hello-darwin-x86_64 CI
 
           - name: macos-arm64
             runs_on: macos-latest
-            variant: darwin-arm64
+            variant: darwin-aarch64
             output: hello
-            run_cmd: ./dist/hello-darwin-arm64 CI
+            run_cmd: ./dist/hello-darwin-aarch64 CI
 
           - name: windows-x64
             runs_on: windows-latest
-            variant: win32-x64
+            variant: windows-x86_64
             output: hello.exe
 
     steps:
@@ -204,7 +204,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           tar -xzf stubs.tgz
           tar -xzf hello-dist.tgz
-          $exe = "dist\hello--win32-x64.exe"
+          $exe = "dist\hello-windows-x86_64.exe"
           if (!(Test-Path $exe)) { throw "Expected output not found: $exe" }
           $outLines = & $exe CI
           $outText = ($outLines -join "`n")

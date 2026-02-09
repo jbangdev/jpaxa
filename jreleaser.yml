@@ -1,0 +1,33 @@
+project:
+  name: jpaxa
+  description: A port of caxa to Java - a tool to package any runtime or script dependent applications into self-extracting executable binaries/bundles
+  authors:
+    - jbangdev
+  license: MIT
+  copyright: Copyright 2026 jbangdev
+  links:
+    homepage: https://github.com/jbangdev/jpaxa
+    documentation: https://github.com/jbangdev/jpaxa#readme
+
+release:
+  github:
+    owner: jbangdev
+    name: jpaxa
+
+distributions:
+  jpaxa:
+    type: BINARY
+    active: ALWAYS
+    artifacts:
+      - path: jpaxa-output/{{distributionName}}-{{platform}}
+        platform: osx-x86_64
+      - path: jpaxa-output/{{distributionName}}-{{platform}}
+        platform: osx-aarch64
+      - path: jpaxa-output/{{distributionName}}-{{platform}}
+        platform: linux-arm
+      - path: jpaxa-output/{{distributionName}}-{{platform}}
+        platform: linux-x86_64
+      - path: jpaxa-output/{{distributionName}}-{{platform}}
+        platform: windows-x86_64
+
+
