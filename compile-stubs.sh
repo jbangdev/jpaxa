@@ -8,15 +8,23 @@ STUB_GO="stub.go"
 STUBS_DIR="stubs"
 
 
-## Needs to match platform in jpaxa.java --variants option
-platforms=( 
-  "windows amd64 windows-x86_64"
-  "darwin  amd64 osx-x86_64"
-  "darwin  arm64 osx-aarch64"
-  "linux   amd64 linux-x86_64"
-  "linux   arm64 linux-aarch64"
-  "linux   arm   linux-arm"
-)
+PLATFORMS_FILE="platforms.txt"
+
+if [ ! -f "$PLATFORMS_FILE" ]; then
+    echo "Error: $PLATFORMS_FILE not found."
+    exit 1
+fi
+
+# Read platforms from file, skipping empty lines and comments
+platforms=()
+while IFS= read -r line || [ -n "$line" ]; do
+    # Skip empty lines and comments
+    line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    if [ -z "$line" ] || [ "${line#\#}" != "$line" ]; then
+        continue
+    fi
+    platforms+=("$line")
+done < "$PLATFORMS_FILE"
 
 if [ ! -f "$STUB_GO" ]; then
     echo "Error: stub.go not found."

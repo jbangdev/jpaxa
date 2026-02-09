@@ -1,0 +1,6 @@
+windows amd64 windows-x86_64
+darwin amd64 osx-x86_64
+darwin arm64 osx-aarch64
+linux amd64 linux-x86_64
+linux arm64 linux-aarch64
+linux arm linux-arm

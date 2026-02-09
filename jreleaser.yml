@@ -16,7 +16,7 @@ release:
 
 distributions:
   jpaxa:
-    type: BINARY
+    type: FLAT_BINARY
     active: ALWAYS
     artifacts:
       - path: jpaxa-output/{{distributionName}}-{{platform}}
@@ -27,7 +27,7 @@ distributions:
         platform: linux-arm
       - path: jpaxa-output/{{distributionName}}-{{platform}}
         platform: linux-x86_64
-      - path: jpaxa-output/{{distributionName}}-{{platform}}
+      - path: jpaxa-output/{{distributionName}}-{{platform}}.exe
         platform: windows-x86_64
 
 

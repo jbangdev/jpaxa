@@ -2,6 +2,7 @@
 //DEPS org.apache.commons:commons-compress:1.21
 //DEPS info.picocli:picocli:4.7.5
 //DEPS com.google.code.gson:gson:2.10.1
+//FILES platforms.txt
 //JAVA 17+
 
 import static java.nio.file.Files.copy;
@@ -552,12 +553,54 @@ public class jpaxa implements Runnable {
     
     private Map<String, String> getKnownVariants() {
         Map<String, String> variants = new LinkedHashMap<>();
-        variants.put("windows-x86_64", "Windows (x64/AMD64)");
-        variants.put("osx-x86_64", "macOS (Intel x64)");
-        variants.put("osx-aarch64", "macOS (Apple Silicon/ARM64)");
-        variants.put("linux-x86_64", "Linux (x64/AMD64)");
-        variants.put("linux-aarch64", "Linux (ARM64/AArch64)");
-        variants.put("linux-arm", "Linux (ARM)");
+        try {
+            InputStream is = getClass().getResourceAsStream("/platforms.txt");
+            if (is == null) {
+                // Fallback to hardcoded if resource not found
+                variants.put("windows-x86_64", "Windows (x64/AMD64)");
+                variants.put("darwin-x86_64", "macOS (Intel x64)");
+                variants.put("darwin-aarch64", "macOS (Apple Silicon/ARM64)");
+                variants.put("linux-x86_64", "Linux (x64/AMD64)");
+                variants.put("linux-aarch64", "Linux (ARM64/AArch64)");
+                variants.put("linux-arm", "Linux (ARM)");
+                return variants;
+            }
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty() || line.startsWith("#")) continue;
+                    String[] parts = line.split("\\s+");
+                    if (parts.length >= 3) {
+                        String suffix = parts[2];
+                        String description = getVariantDescription(suffix);
+                        variants.put(suffix, description);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            // Fallback to hardcoded if reading fails
+            variants.put("windows-x86_64", "Windows (x64/AMD64)");
+            variants.put("darwin-x86_64", "macOS (Intel x64)");
+            variants.put("darwin-aarch64", "macOS (Apple Silicon/ARM64)");
+            variants.put("linux-x86_64", "Linux (x64/AMD64)");
+            variants.put("linux-aarch64", "Linux (ARM64/AArch64)");
+            variants.put("linux-arm", "Linux (ARM)");
+        }
         return variants;
+    }
+    
+    private String getVariantDescription(String suffix) {
+        if (suffix.startsWith("windows-")) return "Windows (" + suffix.substring(8).replace("_", "/") + ")";
+        if (suffix.startsWith("darwin-")) {
+            if (suffix.contains("aarch64")) return "macOS (Apple Silicon/ARM64)";
+            return "macOS (Intel x64)";
+        }
+        if (suffix.startsWith("linux-")) {
+            if (suffix.contains("aarch64")) return "Linux (ARM64/AArch64)";
+            if (suffix.contains("arm")) return "Linux (ARM)";
+            return "Linux (x64/AMD64)";
+        }
+        return suffix;
     }
 }

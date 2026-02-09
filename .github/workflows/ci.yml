@@ -63,7 +63,7 @@ jobs:
             examples/simple-java \
             --directory dist \
             --output hello \
-            --variants
+            --variants all \
             -- "java" "-cp" "{{app}}" "Hello"
 
           test -f "dist/hello-windows-x86_64.exe"
@@ -104,12 +104,7 @@ jobs:
             examples/jpaxa-exec \
             --directory jpaxa-exec-dist \
             --output jpaxa-exec \
-            --variants windows-x86_64 \
-            --variants darwin-x86_64 \
-            --variants darwin-aarch64 \
-            --variants linux-x86_64 \
-            --variants linux-aarch64 \
-            --variants linux-arm \
+            --variants all
             -- "{{app}}/jbang"
 
           tar -czf jpaxa-exec-dist.tgz jpaxa-exec-dist
