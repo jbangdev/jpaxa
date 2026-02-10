@@ -1,3 +1,5 @@
 [tools]
 go = "latest"
+java = "17"
 jbang = "latest"
+jreleaser = "latest"

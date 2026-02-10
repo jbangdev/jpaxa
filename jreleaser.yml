@@ -24,11 +24,11 @@ hooks:
         filter:
           includes: ['assemble']
       - run: |
-              rm -rf examples/jpaxa
-              mkdir -p examples/jpaxa
-              jbang wrapper install -d examples/jpaxa
-              jbang export fatjar -O examples/jpaxa/jpaxa.jar --files=stubs/=stubs jpaxa.java
-              jbang examples/jpaxa/jpaxa.jar examples/jpaxa -- "{{app}}/jbang" "{{app}}/jpaxa.jar"
+              rm -rf build/jpaxa
+              mkdir -p build/jpaxa
+              jbang wrapper install -d build/jpaxa
+              jbang export fatjar -O build/jpaxa/jpaxa.jar --files=stubs/=stubs jpaxa.java
+              jbang build/jpaxa/jpaxa.jar build/jpaxa -- "{{app}}/jbang" "{{app}}/jpaxa.jar"
         filter:
           includes: ['assemble']
           
