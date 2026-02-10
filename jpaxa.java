@@ -31,7 +31,8 @@ import com.google.gson.Gson;
 @Command(
     name = "jpaxa",
     description = "Package applications into executable binaries",
-    mixinStandardHelpOptions = true
+    mixinStandardHelpOptions = true,
+    version = "jpaxa 999-SNAPSHOT"
 )
 public class jpaxa implements Runnable {
     

@@ -29,6 +29,7 @@ jobs:
       - name: Assemble jpaxa
         run: |
          jreleaser assemble
+         jbang build/jpaxa/jpaxa.jar --version
 
       - name: Tar build (preserve permissions)
         shell: bash
