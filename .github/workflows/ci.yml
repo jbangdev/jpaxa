@@ -22,7 +22,7 @@ jobs:
       - name: Assemble jpaxa
         run: |
          jreleaser assemble
-         ls -la .
+         find build
 
       - name: Tar build (preserve permissions)
         shell: bash
