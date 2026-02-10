@@ -10,7 +10,10 @@ matrix:
 hooks:
   script:
     before:
-      - run: rm -f build/stubs/
+      - run: |
+           rm -f build/stubs/
+           rm -f build/jpaxa/
+           mkdir -p build/stubs
         filter:
           includes: ['assemble']
       - run: |
