@@ -13,6 +13,7 @@ import static java.nio.file.Files.writeString;
 import static java.nio.file.attribute.PosixFilePermission.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
@@ -71,8 +72,37 @@ public class jpaxa implements Runnable {
     private List<String> command = new ArrayList<>();
     
     private static final Pattern APP_PLACEHOLDER = Pattern.compile("\\{\\{\\s*app\\s*\\}\\}");
+    private static final byte[] ARCHIVE_SEPARATOR = ("\n" + "CAXA".repeat(3) + "\n").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] FOOTER_SEPARATOR = "\n".getBytes(StandardCharsets.UTF_8);
     
     public static void main(String[] args) {
+        if (args.length > 0 && "inspect".equals(args[0])) {
+            boolean explode = false;
+            List<String> positional = new ArrayList<>();
+            for (int i = 1; i < args.length; i++) {
+                String a = args[i];
+                if ("--explode".equals(a) || "-x".equals(a)) {
+                    explode = true;
+                } else {
+                    positional.add(a);
+                }
+            }
+            if (positional.isEmpty()) {
+                System.err.println("Usage: jpaxa inspect [--explode|-x] <binary>");
+                System.exit(1);
+            }
+            Path binary = Paths.get(positional.get(0));
+            try {
+                inspectBinary(binary, explode);
+                return;
+            } catch (Exception e) {
+                System.err.println("Error inspecting binary: " + e.getMessage());
+                if (Boolean.getBoolean("jpaxa.inspect.stacktrace")) {
+                    e.printStackTrace();
+                }
+                System.exit(1);
+            }
+        }
         System.exit(new CommandLine(new jpaxa()).execute(args));
     }
     
@@ -561,10 +591,10 @@ public class jpaxa implements Runnable {
     private Map<String, String> getKnownVariants() {
         Map<String, String> variants = new LinkedHashMap<>();
         try {
-            InputStream is = getClass().getResourceAsStream("/platforms.txt");
+            InputStream is = getClass().getResourceAsStream("/stubs/platforms.txt");
             if(is == null) {
-                System.err.println("Platforms file not found, zero no known variants will be available");
-                return new HashMap<>();
+                System.err.println("WARN: Platforms file not found, defaults to current platform and architecture");
+                return Collections.singletonMap(getPlatform() + "-" + getArchitecture(), getPlatform() + "-" + getArchitecture());
             }
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
                 String line;
@@ -584,5 +614,94 @@ public class jpaxa implements Runnable {
             return new HashMap<>();
         }
         return variants;
+    }
+
+    private static class FooterInfo {
+        String identifier;
+        List<String> command;
+        String uncompressionMessage;
+    }
+
+    private static void inspectBinary(Path binary, boolean explode) throws IOException {
+        if (!Files.exists(binary)) {
+            throw new IllegalArgumentException("File not found: " + binary);
+        }
+
+        byte[] bytes = Files.readAllBytes(binary);
+        if (bytes.length == 0) {
+            throw new IllegalArgumentException("File is empty: " + binary);
+        }
+
+        int footerIndex = lastIndexOf(bytes, FOOTER_SEPARATOR);
+        if (footerIndex == -1 || footerIndex + FOOTER_SEPARATOR.length >= bytes.length) {
+            throw new IllegalArgumentException("Not a valid jpaxa binary (footer separator not found)");
+        }
+        int footerStart = footerIndex + FOOTER_SEPARATOR.length;
+        String footerJson = new String(bytes, footerStart, bytes.length - footerStart, StandardCharsets.UTF_8);
+
+        FooterInfo footer = new Gson().fromJson(footerJson, FooterInfo.class);
+
+        int archiveIndex = lastIndexOf(bytes, ARCHIVE_SEPARATOR);
+        if (archiveIndex == -1 || archiveIndex >= footerIndex) {
+            throw new IllegalArgumentException("Not a valid jpaxa binary (archive separator not found)");
+        }
+
+        int stubEnd = archiveIndex;
+        int archiveStart = archiveIndex + ARCHIVE_SEPARATOR.length;
+        int archiveLength = footerIndex - archiveStart;
+        if (archiveLength < 0) {
+            throw new IllegalArgumentException("Not a valid jpaxa binary (inconsistent archive/footer positions)");
+        }
+
+        long totalSize = bytes.length;
+        System.out.println("File: " + binary.toAbsolutePath());
+        System.out.println("Total size:   " + totalSize + " bytes");
+        System.out.println("Stub size:    " + stubEnd + " bytes");
+        System.out.println("Archive size: " + archiveLength + " bytes");
+        System.out.println("Footer size:  " + (bytes.length - footerStart) + " bytes");
+
+        if (footer != null) {
+            System.out.println();
+            System.out.println("Identifier: " + footer.identifier);
+            System.out.println("Command:   " + (footer.command != null ? footer.command : Collections.emptyList()));
+            if (footer.uncompressionMessage != null) {
+                System.out.println("Message:   " + footer.uncompressionMessage);
+            }
+        }
+
+        if (explode) {
+            Path dir = binary.getParent() != null ? binary.getParent() : Paths.get(".");
+            String baseName = binary.getFileName().toString();
+
+            Path stubOut = dir.resolve(baseName + ".stub");
+            Path archiveOut = dir.resolve(baseName + ".tar.gz");
+            Path footerOut = dir.resolve(baseName + ".json");
+
+            Files.write(stubOut, Arrays.copyOfRange(bytes, 0, stubEnd));
+            Files.write(archiveOut, Arrays.copyOfRange(bytes, archiveStart, archiveStart + archiveLength));
+            Files.write(footerOut, footerJson.getBytes(StandardCharsets.UTF_8));
+
+            System.out.println();
+            System.out.println("Exploded into:");
+            System.out.println("  " + stubOut.toAbsolutePath());
+            System.out.println("  " + archiveOut.toAbsolutePath());
+            System.out.println("  " + footerOut.toAbsolutePath());
+        }
+    }
+
+    private static int lastIndexOf(byte[] data, byte[] pattern) {
+        if (pattern.length == 0 || data.length < pattern.length) {
+            return -1;
+        }
+        outer:
+        for (int i = data.length - pattern.length; i >= 0; i--) {
+            for (int j = 0; j < pattern.length; j++) {
+                if (data[i + j] != pattern[j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
     }
 }

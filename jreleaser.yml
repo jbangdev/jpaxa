@@ -18,6 +18,10 @@ hooks:
           includes: ['assemble']
       - run: |
           go build -o build/stubs/stub-{{matrix.platform}} stub.go
+          {
+            echo ""
+            echo "CAXACAXACAXA"
+          } >> build/stubs/stub-{{matrix.platform}}
           echo "{{matrix.goos}} {{matrix.goarch}} {{matrix.platform}}" >> build/stubs/platforms.txt
         environment:
           GOOS: "{{matrix.goos}}"
@@ -26,12 +30,7 @@ hooks:
         applyDefaultMatrix: true
         filter:
           includes: ['assemble']
-      - run: |
-              rm -rf build/jpaxa
-              mkdir -p build/jpaxa
-              jbang wrapper install -d build/jpaxa
-              jbang export fatjar -O build/jpaxa/jpaxa.jar --files=stubs/=build/stubs jpaxa.java
-              jbang build/jpaxa/jpaxa.jar --variants all build/jpaxa -- "{{{app}}}/jbang" "{{{app}}}/jpaxa.jar"
+      - run: ./build-jpaxa.sh
         filter:
           includes: ['assemble']
           

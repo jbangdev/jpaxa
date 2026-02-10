@@ -140,9 +140,9 @@ The stub is a Go binary that handles extraction and execution. Pre-compiled stub
 ### Using Pre-compiled Stubs
 
 The Java version will look for stubs in:
-1. Current directory: `stub--<platform>--<arch>`
-2. `stubs/` directory: `stubs/stub--<platform>--<arch>`
-3. JAR resources: `/stubs/stub--<platform>--<arch>`
+1. Current directory: `stub-<platform>`
+2. `stubs/` directory: `stubs/stub-<platform>`
+3. JAR resources: `/stubs/stub-<platform>`
 
 You can copy the stubs from the original caxa project or compile them yourself.
 
@@ -151,38 +151,44 @@ You can copy the stubs from the original caxa project or compile them yourself.
 To compile stubs for all platforms:
 
 ```bash
-# Copy stub.go from the original caxa project
-# Then compile for each platform:
+# Then compile for each platform using the new platform IDs:
+#
+#   windows-x86_64
+#   osx-x86_64
+#   osx-aarch_64
+#   linux-x86_64
+#   linux-aarch_64
+#   linux-arm_32
 
 # Windows x64
-GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o stubs/stub--win32--x64 stub.go
-echo "" >> stubs/stub--win32--x64
-echo "CAXACAXACAXA" >> stubs/stub--win32--x64
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o stubs/stub-windows-x86_64 stub.go
+echo "" >> stubs/stub-windows-x86_64
+echo "CAXACAXACAXA" >> stubs/stub-windows-x86_64
 
 # macOS x64
-GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -o stubs/stub--darwin--x64 stub.go
-echo "" >> stubs/stub--darwin--x64
-echo "CAXACAXACAXA" >> stubs/stub--darwin--x64
+GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -o stubs/stub-osx-x86_64 stub.go
+echo "" >> stubs/stub-osx-x86_64
+echo "CAXACAXACAXA" >> stubs/stub-osx-x86_64
 
 # macOS ARM64
-GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o stubs/stub--darwin--arm64 stub.go
-echo "" >> stubs/stub--darwin--arm64
-echo "CAXACAXACAXA" >> stubs/stub--darwin--arm64
+GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o stubs/stub-osx-aarch_64 stub.go
+echo "" >> stubs/stub-osx-aarch_64
+echo "CAXACAXACAXA" >> stubs/stub-osx-aarch_64
 
 # Linux x64
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o stubs/stub--linux--x64 stub.go
-echo "" >> stubs/stub--linux--x64
-echo "CAXACAXACAXA" >> stubs/stub--linux--x64
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o stubs/stub-linux-x86_64 stub.go
+echo "" >> stubs/stub-linux-x86_64
+echo "CAXACAXACAXA" >> stubs/stub-linux-x86_64
 
 # Linux ARM64
-GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o stubs/stub--linux--arm64 stub.go
-echo "" >> stubs/stub--linux--arm64
-echo "CAXACAXACAXA" >> stubs/stub--linux--arm64
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o stubs/stub-linux-aarch_64 stub.go
+echo "" >> stubs/stub-linux-aarch_64
+echo "CAXACAXACAXA" >> stubs/stub-linux-aarch_64
 
-# Linux ARM
-GOOS=linux GOARCH=arm CGO_ENABLED=0 go build -o stubs/stub--linux--arm stub.go
-echo "" >> stubs/stub--linux--arm
-echo "CAXACAXACAXA" >> stubs/stub--linux--arm
+# Linux ARM (32-bit)
+GOOS=linux GOARCH=arm CGO_ENABLED=0 go build -o stubs/stub-linux-arm_32 stub.go
+echo "" >> stubs/stub-linux-arm_32
+echo "CAXACAXACAXA" >> stubs/stub-linux-arm_32
 ```
 
 ## Cross-Platform Building
