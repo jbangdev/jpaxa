@@ -48,7 +48,7 @@ jobs:
             runs_on: ubuntu-latest
             variant: linux-x86_64
             output: hello
-            run_cmd: ./dist/jpaxa-linux-x86_64 CI
+            run_cmd: ./build/jpaxa-output/jpaxa-linux-x86_64 CI
 
           # Hosted arm64 runners are not available in all orgs. If this fails to schedule,
           # remove this entry.
@@ -62,18 +62,18 @@ jobs:
             runs_on: macos-15-intel
             variant: osx-x86_64
             output: hello
-            run_cmd: ./dist/jpaxa-osx-x86_64 CI
+            run_cmd: ./build/jpaxa-output/jpaxa-osx-x86_64 CI
 
           - name: macos-arm64
             runs_on: macos-latest
             variant: osx-aarch_64
             output: hello
-            run_cmd: ./dist/jpaxa-osx-aarch_64 CI
+            run_cmd: ./build/jpaxa-output/jpaxa-osx-aarch_64 CI
 
           - name: windows-x64
             runs_on: windows-latest
             variant: windows-x86_64
-            output: ./dist/jpaxa-windows-x86_64.exe
+            output: ./build/jpaxa-output/jpaxa-windows-x86_64.exe
 
     steps:
       - uses: actions/checkout@v4

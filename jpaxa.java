@@ -28,202 +28,211 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import com.google.gson.Gson;
 
-@Command(name = "jpaxa", description = "Package applications into executable binaries", mixinStandardHelpOptions = true)
+@Command(
+    name = "jpaxa",
+    description = "Package applications into executable binaries",
+    mixinStandardHelpOptions = true
+)
 public class jpaxa implements Runnable {
-    
-    @Parameters(index = "0", arity = "1", description = "The input directory to package")
-    private Path input;
-    
-    @Option(names = {"-o", "--output"}, description = "The name of the executable to be produced, if relative will be relative to the build directory")
-    private Path output;
-
-    @Option(names = {"-d", "--directory"}, description = "The path where the executable will be produced", defaultValue = "build/jpaxa-output")
-    private Path build;
-
-    
-    @Option(names = {"-F", "--force"}, negatable = true, description = "Overwrite output if they exists. True by default.", defaultValue = "true", fallbackValue = "true")
-    private boolean force = true;
-    
-    @Option(names = {"-e", "--exclude"}, description = "Paths to exclude from the build")
-    private List<String> exclude = new ArrayList<>();
-    
-    @Option(names = {"-p", "--prepare-command"}, description = "Command to run on the build directory before packaging")
-    private String prepareCommand;
-    
-    @Option(names = {"-s", "--stub"}, description = "Path to the platform specific stubs, if not provided will look up in classpath under /stubs")
-    private Path stub;
-    
-    @Option(names = {"--identifier"}, description = "Build identifier, which is part of the path in which the application will be unpacked")
-    private String identifier;
-    
-    @Option(names = {"-B", "--no-remove-build-directory"}, description = "Don't remove the build directory after the build")
-    private boolean noRemoveBuildDirectory = false;
-    
-    @Option(names = {"-m", "--message"}, description = "A message to show when uncompressing")
-    private String uncompressionMessage;
-
-    @Option(names = {"--variants"}, description = "Variants to build, will default to current platform and architecture if not provided. `all` to build all known variants.")
-    private List<String> variants = new ArrayList<>();
-    
-    @Option(names = {"--verbose"}, description = "Verbose output")
-    private boolean verbose = false;
-
-    @Parameters(index = "1..*", description = "The command to run and optional arguments")
-    private List<String> command = new ArrayList<>();
     
     private static final Pattern APP_PLACEHOLDER = Pattern.compile("\\{\\{\\s*app\\s*\\}\\}");
     private static final byte[] ARCHIVE_SEPARATOR = ("\n" + "CAXA".repeat(3) + "\n").getBytes(StandardCharsets.UTF_8);
     private static final byte[] FOOTER_SEPARATOR = "\n".getBytes(StandardCharsets.UTF_8);
     
     public static void main(String[] args) {
-        if (args.length > 0 && "inspect".equals(args[0])) {
-            boolean explode = false;
-            List<String> positional = new ArrayList<>();
-            for (int i = 1; i < args.length; i++) {
-                String a = args[i];
-                if ("--explode".equals(a) || "-x".equals(a)) {
-                    explode = true;
-                } else {
-                    positional.add(a);
-                }
-            }
-            if (positional.isEmpty()) {
-                System.err.println("Usage: jpaxa inspect [--explode|-x] <binary>");
-                System.exit(1);
-            }
-            Path binary = Paths.get(positional.get(0));
-            try {
-                inspectBinary(binary, explode);
-                return;
-            } catch (Exception e) {
-                System.err.println("Error inspecting binary: " + e.getMessage());
-                if (Boolean.getBoolean("jpaxa.inspect.stacktrace")) {
-                    e.printStackTrace();
-                }
-                System.exit(1);
-            }
-        }
-        System.exit(new CommandLine(new jpaxa()).execute(args));
+        int exitCode = new CommandLine(new jpaxa()).execute(args);
+        System.exit(exitCode);
     }
     
     @Override
     public void run() {
+        new CommandLine(this).usage(System.err);
+    }
+    
+    // Configuration object used during a single build invocation
+    @Command(
+        name = "build",
+        description = "Package an application directory into a self-extracting executable",
+        mixinStandardHelpOptions = true
+    )
+    int build(
+        @Parameters(index = "0", paramLabel = "INPUT", description = "The input directory to package")
+        Path input,
+        @Option(names = {"-o", "--output"}, paramLabel = "OUTPUT",
+                description = "The name of the executable to be produced, if relative will be relative to the build directory")
+        Path output,
+        @Option(names = {"-d", "--directory"}, paramLabel = "DIR",
+                description = "The path where the executable will be produced",
+                defaultValue = "build/jpaxa-output")
+        Path buildDir,
+        @Option(names = {"-F", "--force"}, negatable = true,
+                description = "Overwrite output if it exists. True by default.",
+                defaultValue = "true", fallbackValue = "true")
+        boolean force,
+        @Option(names = {"-e", "--exclude"}, paramLabel = "PATH",
+                description = "Paths to exclude from the build")
+        List<String> exclude,
+        @Option(names = {"-p", "--prepare-command"}, paramLabel = "COMMAND",
+                description = "Command to run on the build directory before packaging")
+        String prepareCommand,
+        @Option(names = {"-s", "--stub"}, paramLabel = "PATH",
+                description = "Path to the platform specific stubs, if not provided will look up in classpath under /stubs")
+        Path stub,
+        @Option(names = {"--identifier"}, paramLabel = "ID",
+                description = "Build identifier, which is part of the path in which the application will be unpacked")
+        String identifier,
+        @Option(names = {"-B", "--no-remove-build-directory"},
+                description = "Don't remove the build directory after the build")
+        boolean noRemoveBuildDirectory,
+        @Option(names = {"-m", "--message"}, paramLabel = "TEXT",
+                description = "A message to show when uncompressing")
+        String uncompressionMessage,
+        @Option(names = {"--variants"}, paramLabel = "VARIANT",
+                description = "Variants to build; defaults to current platform and architecture if not provided. Use `all` to build all known variants.")
+        List<String> variants,
+        @Option(names = {"--verbose"}, description = "Verbose output")
+        boolean verbose,
+        @Parameters(index = "1..*", paramLabel = "COMMAND", description = "The command to run and optional arguments")
+        List<String> command
+    ) {
         try {
-            packageApplication();
+            List<String> effectiveVariants = variants;
+            if (effectiveVariants == null || effectiveVariants.isEmpty()) {  // If no variants were provided, build the current platform and architecture
+                String stubName = getPlatform() + "-" + getArchitecture();
+                effectiveVariants = Arrays.asList(stubName);
+            } else if (effectiveVariants.contains("all")) { // If --variants was provided with values, build all known variants
+                effectiveVariants = new ArrayList<>(effectiveVariants);
+                effectiveVariants.remove("all");
+                effectiveVariants.addAll(getKnownVariants().keySet());
+            }
+
+            // Validate input
+            if (!exists(input) || !isDirectory(input)) {
+                throw new IllegalArgumentException("Input isn't a directory: " + input);
+            }
+
+            // Validate output
+            String osName = System.getProperty("os.name").toLowerCase();
+            boolean isWindows = osName.contains("win");
+
+            Path effectiveOutput = output;
+            if (effectiveOutput == null) {
+                effectiveOutput = Path.of(input.getFileName().toString());
+            }
+
+            effectiveOutput = buildDir.resolve(effectiveOutput);
+
+            if (exists(effectiveOutput) && !force) {
+                throw new IllegalArgumentException("Output already exists: %s, use --force to overwrite".formatted(effectiveOutput));
+            } else if (!exists(effectiveOutput)) {
+                createDirectories(effectiveOutput.getParent());
+            }
+
+            // Create build directory
+            Path tmpBuildDir = Files.createTempDirectory("jpaxa-");
+            try {
+                // Copy input to build directory
+                copyDirectory(input, tmpBuildDir, exclude != null ? exclude : List.of());
+
+                // Run prepare command if specified
+                if (prepareCommand != null && !prepareCommand.isEmpty()) {
+                    ProcessBuilder pb = new ProcessBuilder();
+                    if (isWindows) {
+                        pb.command("cmd", "/c", prepareCommand);
+                    } else {
+                        pb.command("sh", "-c", prepareCommand);
+                    }
+                    pb.directory(tmpBuildDir.toFile());
+                    Process process = pb.start();
+                    int exitCode = process.waitFor();
+                    if (exitCode != 0) {
+                        throw new RuntimeException("Prepare command failed with exit code: " + exitCode);
+                    }
+                }
+
+                // Handle .app bundle for macOS
+                if (endsWith(effectiveOutput, ".app")) {
+                    if (!osName.contains("mac")) {
+                        throw new IllegalArgumentException("macOS Application Bundles (.app) are supported in macOS only.");
+                    }
+                    createMacAppBundle(effectiveOutput, tmpBuildDir, command != null ? command : List.of(), verbose);
+                    if (verbose) {
+                        System.out.println("Created macOS Application Bundle: " + effectiveOutput);
+                    }
+                    return ExitCode.OK;
+                }
+
+                // Handle .sh shell stub
+                if (endsWith(effectiveOutput, ".sh")) {
+                    if (isWindows) {
+                        throw new IllegalArgumentException("The Shell Stub (.sh) isn't supported in Windows.");
+                    }
+                    createShellStub(effectiveOutput, tmpBuildDir, identifier, uncompressionMessage, command != null ? command : List.of());
+                    if (verbose) {
+                        System.out.println("Created Shell Stub: " + effectiveOutput);
+                    }
+                    return ExitCode.OK;
+                }
+
+                // Binary stubs for variants
+                List<String> cmd = command != null ? command : List.of();
+                for (String variant : effectiveVariants) {
+                    createBinaryStub(
+                        effectiveOutput,
+                        tmpBuildDir,
+                        isWindows,
+                        variant,
+                        stub,
+                        identifier,
+                        force,
+                        verbose,
+                        uncompressionMessage,
+                        cmd
+                    );
+                }
+
+            } finally {
+                if (!noRemoveBuildDirectory) {
+                    deleteDirectory(tmpBuildDir);
+                } else {
+                    System.out.println("Build directory not removed: " + tmpBuildDir);
+                }
+            }
+            return ExitCode.OK;
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
-            System.exit(ExitCode.SOFTWARE);
+            return ExitCode.SOFTWARE;
         }
     }
-    
-    boolean endsWith(Path path, String suffix) {
+
+    private static boolean endsWith(Path path, String suffix) {
         return path.getFileName().toString().endsWith(suffix);
     }
 
-    private boolean isWindowsVariantStub(String variant) {
+    private static boolean isWindowsVariantStub(String variant) {
         // variant is like "windows-x86_64"
         return variant.startsWith("windows-");
     }
 
-    private String stripExeSuffix(String path) {
+    private static String stripExeSuffix(String path) {
         return path.endsWith(".exe") ? path.substring(0, path.length() - 4) : path;
     }
 
-    private void packageApplication() throws Exception {
-        if (variants.isEmpty()) {  // If no variants were provided, build the current platform and architecture
-            String stubName = getPlatform() + "-" + getArchitecture();
-            variants = Arrays.asList(stubName);
-        } else if(variants.contains("all")) { // If --variants was provided with values, build all known variants
-            variants.remove("all");
-            variants.addAll(getKnownVariants().keySet());
-        }
-        
-        // Validate input
-        if (!exists(input) || !isDirectory(input)) {
-            throw new IllegalArgumentException("Input isn't a directory: " + input);
-        }
-        
-        // Validate output
-        String osName = System.getProperty("os.name").toLowerCase();
-        boolean isWindows = osName.contains("win");
-        
-        if(output == null) {
-            output = Path.of(input.getFileName().toString());
-        }
+    private void createBinaryStub(
+        Path outputBase,
+        Path buildDir,
+        boolean isWindows,
+        String variant,
+        Path explicitStub,
+        String explicitIdentifier,
+        boolean force,
+        boolean verbose,
+        String uncompressionMessage,
+        List<String> command
+    ) throws Exception {
 
-        output = build.resolve(output);
-        
-        if (exists(output) && !force) {
-            throw new IllegalArgumentException("Output already exists: %s, use --force to overwrite".formatted(output));
-        } else if (!exists(output)) {
-            createDirectories(output.getParent());
-        }
-        
-        // Create build directory
-        Path buildDir = Files.createTempDirectory("jpaxa-");
-        try {
-            // Copy input to build directory
-            copyDirectory(input, buildDir, exclude);
-            
-            // Run prepare command if specified
-            if (prepareCommand != null && !prepareCommand.isEmpty()) {
-                ProcessBuilder pb = new ProcessBuilder();
-                if (isWindows) {
-                    pb.command("cmd", "/c", prepareCommand);
-                } else {
-                    pb.command("sh", "-c", prepareCommand);
-                }
-                pb.directory(buildDir.toFile());
-                Process process = pb.start();
-                int exitCode = process.waitFor();
-                if (exitCode != 0) {
-                    throw new RuntimeException("Prepare command failed with exit code: " + exitCode);
-                }
-            }
-            
-            // Handle .app bundle for macOS
-            if (endsWith(output, ".app")) {
-                if (!osName.contains("mac")) {
-                    throw new IllegalArgumentException("macOS Application Bundles (.app) are supported in macOS only.");
-                }
-                createMacAppBundle(buildDir);
-                if(verbose) {
-                    System.out.println("Created macOS Application Bundle: " + output);
-                }
-                return;
-            }
-            
-            // Handle .sh shell stub
-            if (endsWith(output, ".sh")) {
-                if (isWindows) {
-                    throw new IllegalArgumentException("The Shell Stub (.sh) isn't supported in Windows.");
-                }
-                createShellStub(buildDir);
-                if(verbose) {
-                    System.out.println("Created Shell Stub: " + output);
-                }
-                return;
-            }
-            
-            
-            for (String variant : variants) {
-                   createBinaryStub(buildDir, isWindows, variant);
-            }
-            
-            
-        } finally {
-            if (!noRemoveBuildDirectory) {
-                deleteDirectory(buildDir);
-            } else {
-                System.out.println("Build directory not removed: " + buildDir);
-            }
-        }
-    }
-    
-    private void createBinaryStub(Path buildDir, boolean isWindows, String variant) throws Exception {
-       
-        String baseOutputPath = output.toString();
+        String baseOutputPath = outputBase.toString();
         // For Windows variants, ensure the produced filename ends with ".exe" so it is directly runnable on Windows.
         // We put ".exe" at the end (after the variant suffix), because Windows requires the extension at the end.
         String outputPath;
@@ -233,11 +242,8 @@ public class jpaxa implements Runnable {
         } else {
             outputPath = baseOutputPath + "-" + variant;
         }
-        Path stubPath;
-        if (stub != null) {
-            stubPath = stub;
-        } else {
-            // Try to find stub in resources or current directory
+        Path stubPath = explicitStub;
+        if (stubPath == null) {
             stubPath = findStub(variant);
             if (stubPath == null) {
                 throw new IllegalArgumentException(
@@ -248,16 +254,17 @@ public class jpaxa implements Runnable {
         }
         
         // Generate identifier if not provided
+        String identifier = explicitIdentifier;
         if (identifier == null || identifier.isEmpty()) {
-            String baseName = output.getFileName().toString();
+            String baseName = outputBase.getFileName().toString();
             baseName = baseName.replaceAll("\\.exe$", "").replaceAll("\\.app$", "").replaceAll("\\.sh$", "");
             identifier = baseName + "/" + generateRandomString(10);
         }
         
-        if(Files.exists(Path.of(outputPath)) && !force) {
+        if (Files.exists(Path.of(outputPath)) && !force) {
             throw new IllegalArgumentException("Output already exists: %s, use --force to overwrite".formatted(outputPath));
         }
-        if(verbose) {
+        if (verbose) {
             System.out.println("Copying stub to output: " + stubPath + " -> " + outputPath);
         }
         // Copy stub to output
@@ -288,7 +295,7 @@ public class jpaxa implements Runnable {
         }   
         
         String footerJson = new Gson().toJson(footer);
-        if(verbose) {
+        if (verbose) {
             System.out.println("Footer JSON: " + footerJson);
         }
         writeString(Path.of(outputPath), "\n" + footerJson, StandardOpenOption.APPEND);
@@ -296,8 +303,9 @@ public class jpaxa implements Runnable {
         System.out.println("Created binary: " + outputPath);
     }
     
-    private void createShellStub(Path buildDir) throws Exception {
+    private void createShellStub(Path output, Path buildDir, String explicitIdentifier, String uncompressionMessage, List<String> command) throws Exception {
         // Generate identifier if not provided
+        String identifier = explicitIdentifier;
         if (identifier == null || identifier.isEmpty()) {
             String baseName = output.getFileName().toString().replaceAll("\\.sh$", "");
             identifier = baseName + "/" + generateRandomString(10);
@@ -363,7 +371,7 @@ public class jpaxa implements Runnable {
         appendTarball(buildDir, output);
     }
     
-    private void createMacAppBundle(Path buildDir) throws Exception {
+    private void createMacAppBundle(Path output, Path buildDir, List<String> command, boolean verbose) throws Exception {
         String name = output.getFileName().toString().replaceAll("\\.app$", "");
         Path appPath = output;
         Path contentsPath = appPath.resolve("Contents");
@@ -620,11 +628,88 @@ public class jpaxa implements Runnable {
         }
         return variants;
     }
-
+    
     private static class FooterInfo {
         String identifier;
         List<String> command;
         String uncompressionMessage;
+    }
+
+    @Command(
+        name = "inspect",
+        description = "Inspect a jpaxa-created binary and optionally split it into stub, archive, and footer",
+        mixinStandardHelpOptions = true
+    )
+    int inspect(
+        @Option(names = {"-x", "--explode"}, description = "Split into <binary>.stub, <binary>.tar.gz, and <binary>.json")
+        boolean explode,
+        @Parameters(index = "0", paramLabel = "BINARY", description = "The jpaxa binary to inspect")
+        Path binary
+    ) {
+        try {
+            inspectBinary(binary, explode);
+            return ExitCode.OK;
+        } catch (Exception e) {
+            System.err.println("Error inspecting binary: " + e.getMessage());
+            if (Boolean.getBoolean("jpaxa.inspect.stacktrace")) {
+                e.printStackTrace();
+            }
+            return ExitCode.SOFTWARE;
+        }
+    }
+
+    @Command(
+        name = "verify",
+        description = "Verify that all platforms listed in platforms.txt have available stubs",
+        mixinStandardHelpOptions = true
+    )
+    int verify() {
+        try {
+            verifyStubs();
+            return ExitCode.OK;
+        } catch (Exception e) {
+            System.err.println("Error verifying stubs: " + e.getMessage());
+            if (Boolean.getBoolean("jpaxa.verify.stacktrace")) {
+                e.printStackTrace();
+            }
+            return ExitCode.SOFTWARE;
+        }
+    }
+
+    private static void verifyStubs() throws IOException {
+        jpaxa tool = new jpaxa();
+        Map<String, String> variants = tool.getKnownVariants();
+
+        if (variants.isEmpty()) {
+            throw new IllegalStateException("No platforms found in /stubs/platforms.txt");
+        }
+
+        // Detect fallback case where platforms file was missing
+        if (variants.size() == 1) {
+            String only = variants.keySet().iterator().next();
+            String expected = tool.getPlatform() + "-" + tool.getArchitecture();
+            if (only.equals(expected)) {
+                throw new IllegalStateException("Platforms file '/stubs/platforms.txt' not found on classpath; cannot verify platforms.");
+            }
+        }
+
+        boolean allOk = true;
+        System.out.println("Verifying stubs for " + variants.size() + " platform(s)...");
+        for (String platform : variants.keySet()) {
+            Path stub = tool.findStub(platform);
+            if (stub == null) {
+                System.out.println("[MISSING] " + platform + " -> no stub found");
+                allOk = false;
+            } else {
+                System.out.println("[OK]      " + platform + " -> " + stub.toAbsolutePath());
+            }
+        }
+
+        if (!allOk) {
+            throw new IllegalStateException("One or more platforms are missing stubs. See [MISSING] entries above.");
+        } else {
+            System.out.println("All referenced platforms have available stubs.");
+        }
     }
 
     private static void inspectBinary(Path binary, boolean explode) throws IOException {
