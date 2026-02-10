@@ -2,8 +2,6 @@
 //DEPS org.apache.commons:commons-compress:1.21
 //DEPS info.picocli:picocli:4.7.5
 //DEPS com.google.code.gson:gson:2.10.1
-//need to have run jreleaser hooks to generate stubs/platforms.txt
-///FILES build/stubs/platforms.txt
 //JAVA 17+
 
 import static java.nio.file.Files.copy;

@@ -23,18 +23,18 @@ jobs:
         run: |
          jreleaser assemble
          ls -la .
-         
+
       - name: Tar build (preserve permissions)
         shell: bash
         run: |
           set -euo pipefail
-          tar -czf build/stubs.tgz build
+          tar -czf build.tgz build
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: stubs-tgz
-          path: stubs.tgz
+          name: build-tgz
+          path: build.tgz
           if-no-files-found: error
 
       - name: Package example for all variants

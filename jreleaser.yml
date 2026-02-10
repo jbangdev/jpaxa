@@ -11,13 +11,13 @@ hooks:
   script:
     before:
       - run: |
-           rm -f build/stubs/
-           rm -f build/jpaxa/
+           rm -rf build/stubs/
+           rm -rf build/jpaxa/
            mkdir -p build/stubs
         filter:
           includes: ['assemble']
       - run: |
-          go build -o stubs/stub-{{matrix.platform}} stub.go
+          go build -o build/stubs/stub-{{matrix.platform}} stub.go
           echo "{{matrix.goos}} {{matrix.goarch}} {{matrix.platform}}" >> build/stubs/platforms.txt
         environment:
           GOOS: "{{matrix.goos}}"
@@ -30,8 +30,8 @@ hooks:
               rm -rf build/jpaxa
               mkdir -p build/jpaxa
               jbang wrapper install -d build/jpaxa
-              jbang export fatjar -O build/jpaxa/jpaxa.jar --files=stubs/=stubs jpaxa.java
-              jbang build/jpaxa/jpaxa.jar build/jpaxa -- "{{app}}/jbang" "{{app}}/jpaxa.jar"
+              jbang export fatjar -O build/jpaxa/jpaxa.jar --files=stubs/=build/stubs jpaxa.java
+              jbang build/jpaxa/jpaxa.jar --variants allbuild/jpaxa -- "{{app}}/jbang" "{{app}}/jpaxa.jar"
         filter:
           includes: ['assemble']
           
