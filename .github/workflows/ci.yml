@@ -35,7 +35,14 @@ jobs:
           name: build-tgz
           path: build.tgz
           if-no-files-found: error
-
+      
+      - name: verify jar
+        run: |
+          jbang build/jpaxa/jpaxa.jar verify
+      - name: verify binary
+        run: |
+          build/jpaxa-output/jpaxa-linux-x86_64 verify
+          
   platform-matrix:
     name: Package + run on ${{ matrix.name }}
     needs: [variants-smoke]
