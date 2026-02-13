@@ -63,7 +63,7 @@ jobs:
             runs_on: ubuntu-latest
             variant: linux-x86_64
             output: hello
-            run_cmd: ./build/jpaxa-output/jpaxa-linux-x86_64 CI
+            run_cmd: ./build/jpaxa-output/jpaxa-linux-x86_64 verify
 
           # Hosted arm64 runners are not available in all orgs. If this fails to schedule,
           # remove this entry.
@@ -77,22 +77,21 @@ jobs:
             runs_on: macos-15-intel
             variant: osx-x86_64
             output: hello
-            run_cmd: ./build/jpaxa-output/jpaxa-osx-x86_64 CI
+            run_cmd: ./build/jpaxa-output/jpaxa-osx-x86_64 verify
 
           - name: macos-arm64
             runs_on: macos-latest
             variant: osx-aarch_64
             output: hello
-            run_cmd: ./build/jpaxa-output/jpaxa-osx-aarch_64 CI
+            run_cmd: ./build/jpaxa-output/jpaxa-osx-aarch_64 verify
 
           - name: windows-x64
             runs_on: windows-latest
             variant: windows-x86_64
-            output: ./build/jpaxa-output/jpaxa-windows-x86_64.exe
+            output: ./build/jpaxa-output/jpaxa-windows-x86_64.exe verify
 
     steps:
       - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v3
 
       - name: Download build
         uses: actions/download-artifact@v4
@@ -108,8 +107,7 @@ jobs:
           tar -xzf build.tgz
           out="$(${{ matrix.run_cmd }})"
           echo "$out"
-          echo "$out" | grep -F "Hello from packaged Java application!"
-          echo "$out" | grep -F "Arguments: CI"
+          echo "$out" | grep -F "Verifying stubs for 6 platform(s)"
 
       - name: Run packaged app (windows)
         if: runner.os == 'Windows'
@@ -120,9 +118,8 @@ jobs:
           tar -xzf build.tgz
           $exe = "build\jpaxa-output\jpaxa-windows-x86_64.exe"
           if (!(Test-Path $exe)) { throw "Expected output not found: $exe" }
-          $outLines = & $exe CI
+          $outLines = & $exe verify
           $outText = ($outLines -join "`n")
           Write-Host $outText
-          if ($outText -notmatch "Hello from packaged Java application!") { throw "Missing expected greeting" }
-          if ($outText -notmatch "Arguments: CI") { throw "Missing expected arguments line" }
+          if ($outText -notmatch "Verifying stubs for 6 platform(s)") { throw "Missing expected greeting" }
 
