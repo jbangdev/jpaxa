@@ -1,6 +1,6 @@
 # jpaxa
 
-A port of [caxa](https://github.com/leafac/caxa) to Java - a tool to package any runtime or script dependent applications (Node.js, Java, Python, jbang, etc.) into self-extracting executable binaries/bundles.
+A port of [jpaxa](https://github.com/leafac/jpaxa) to Java - a tool to package any runtime or script dependent applications (Node.js, Java, Python, jbang, etc.) into self-extracting executable binaries/bundles.
 
 ## Overview
 
@@ -39,16 +39,16 @@ you point it to and package/unpack it.
 - :x: packaging for Java applications - `jpaxa` is agnostic to the runtime of the application, it will package the application as is. 
 - :x: high-performant - on first run there is cost of extracting the archive and running the command. This is not a problem for most applications, but if you need high performance on first call, you should use a different approach.
 
-## Differences from Original caxa
+## Differences from Original jpaxa
 
 - **Written in Java** instead of TypeScript/Node.js; more portable and easier to maintain (for me :)
-- **No runtime bundling** - caxa had special node support to bundle the application, instead `jpaxa` expect users to existing tools to bundle your application, `jpaxa` for now will just package the exectuble archive. (note: I'm open to adding runtime bundling support if there is demand)
+- **No runtime bundling** - jpaxa had special node support to bundle the application, instead `jpaxa` expect users to existing tools to bundle your application, `jpaxa` for now will just package the exectuble archive. (note: I'm open to adding runtime bundling support if there is demand)
 - **Cross-platform Java** - can run on any platform with Java installed
 - **jbang-compatible** - can be run directly with jbang
 
 ## Install/Run
 
-Install binaries from [releases](https://github.com/caxa/jpaxa/releases) or install directly with jbang:
+Install binaries from [releases](https://github.com/jpaxa/jpaxa/releases) or install directly with jbang:
 
 ```bash
 jbang app install jpaxa@jbangdev
@@ -68,19 +68,19 @@ jpaxa app -- "{{apppack}}/jbang" "env@jbangdev"
 jpaxa \
   --input "my-java-app" \
   --output "my-java-app" \
-  -- "java" "-jar" "{{caxa}}/app.jar"
+  -- "java" "-jar" "{{jpaxa}}/app.jar"
 
 # Package a Node.js application, assuming you have node installed in node_modules/.bin/node
 jpaxa \
   --input "my-app" \
   --output "my-app" \
-  -- "{{caxa}}/node_modules/.bin/node" "{{caxa}}/index.js"
+  -- "{{jpaxa}}/node_modules/.bin/node" "{{jpaxa}}/index.js"
 
 # Package a Python application, assume python3 is in the path of user running the command
 jpaxa \
   --input "my-python-app" \
   --output "my-python-app" \
-  -- "python3" "{{caxa}}/main.py"
+  -- "python3" "{{jpaxa}}/main.py"
 ```
 
 ### Windows
@@ -88,7 +88,7 @@ jpaxa \
 On Windows, the output must end in `.exe`:
 
 ```bash
-jbang Caxa.java --input "my-app" --output "my-app.exe" -- "{{caxa}}/node_modules/.bin/node" "{{caxa}}/index.js"
+jbang JPAXA.java --input "my-app" --output "my-app.exe" -- "{{jpaxa}}/node_modules/.bin/node" "{{jpaxa}}/index.js"
 ```
 
 ### macOS Application Bundle
@@ -96,7 +96,7 @@ jbang Caxa.java --input "my-app" --output "my-app.exe" -- "{{caxa}}/node_modules
 On macOS, you can create a `.app` bundle:
 
 ```bash
-jbang Caxa.java --input "my-app" --output "MyApp.app" -- "{{caxa}}/node_modules/.bin/node" "{{caxa}}/index.js"
+jbang JPAXA.java --input "my-app" --output "MyApp.app" -- "{{jpaxa}}/node_modules/.bin/node" "{{jpaxa}}/index.js"
 ```
 
 ### Shell Stub (macOS/Linux only)
@@ -104,7 +104,7 @@ jbang Caxa.java --input "my-app" --output "MyApp.app" -- "{{caxa}}/node_modules/
 For a smaller binary that depends on system tools (tar, tail):
 
 ```bash
-jbang Caxa.java --input "my-app" --output "my-app.sh" -- "{{caxa}}/node_modules/.bin/node" "{{caxa}}/index.js"
+jbang JPAXA.java --input "my-app" --output "my-app.sh" -- "{{jpaxa}}/node_modules/.bin/node" "{{jpaxa}}/index.js"
 ```
 
 ## Command-Line Options
@@ -123,12 +123,12 @@ jbang Caxa.java --input "my-app" --output "my-app.sh" -- "{{caxa}}/node_modules/
 -m, --uncompression-message <message>  Message to show when uncompressing
 ```
 
-## The `{{caxa}}` Placeholder
+## The `{{jpaxa}}` Placeholder
 
-The `{{caxa}}` placeholder in your command is replaced with the directory where the application is extracted at runtime. For example:
+The `{{jpaxa}}` placeholder in your command is replaced with the directory where the application is extracted at runtime. For example:
 
-- `{{caxa}}/index.js` → `/tmp/caxa/applications/my-app-abc123/0/index.js`
-- `{{caxa}}/node_modules/.bin/node` → `/tmp/caxa/applications/my-app-abc123/0/node_modules/.bin/node`
+- `{{jpaxa}}/index.js` → `/tmp/jpaxa/applications/my-app-abc123/0/index.js`
+- `{{jpaxa}}/node_modules/.bin/node` → `/tmp/jpaxa/applications/my-app-abc123/0/node_modules/.bin/node`
 
 ## Stubs
 
@@ -144,7 +144,7 @@ The Java version will look for stubs in:
 2. `stubs/` directory: `stubs/stub-<platform>`
 3. JAR resources: `/stubs/stub-<platform>`
 
-You can copy the stubs from the original caxa project or compile them yourself.
+You can copy the stubs from the original jpaxa project or compile them yourself.
 
 ### Compiling Stubs
 
@@ -163,32 +163,32 @@ To compile stubs for all platforms:
 # Windows x64
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o stubs/stub-windows-x86_64 stub.go
 echo "" >> stubs/stub-windows-x86_64
-echo "CAXACAXACAXA" >> stubs/stub-windows-x86_64
+echo "JPAXAJPAXAJPAXA" >> stubs/stub-windows-x86_64
 
 # macOS x64
 GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -o stubs/stub-osx-x86_64 stub.go
 echo "" >> stubs/stub-osx-x86_64
-echo "CAXACAXACAXA" >> stubs/stub-osx-x86_64
+echo "JPAXAJPAXAJPAXA" >> stubs/stub-osx-x86_64
 
 # macOS ARM64
 GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o stubs/stub-osx-aarch_64 stub.go
 echo "" >> stubs/stub-osx-aarch_64
-echo "CAXACAXACAXA" >> stubs/stub-osx-aarch_64
+echo "JPAXAJPAXAJPAXA" >> stubs/stub-osx-aarch_64
 
 # Linux x64
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o stubs/stub-linux-x86_64 stub.go
 echo "" >> stubs/stub-linux-x86_64
-echo "CAXACAXACAXA" >> stubs/stub-linux-x86_64
+echo "JPAXAJPAXAJPAXA" >> stubs/stub-linux-x86_64
 
 # Linux ARM64
 GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o stubs/stub-linux-aarch_64 stub.go
 echo "" >> stubs/stub-linux-aarch_64
-echo "CAXACAXACAXA" >> stubs/stub-linux-aarch_64
+echo "JPAXAJPAXAJPAXA" >> stubs/stub-linux-aarch_64
 
 # Linux ARM (32-bit)
 GOOS=linux GOARCH=arm CGO_ENABLED=0 go build -o stubs/stub-linux-arm_32 stub.go
 echo "" >> stubs/stub-linux-arm_32
-echo "CAXACAXACAXA" >> stubs/stub-linux-arm_32
+echo "JPAXAJPAXAJPAXA" >> stubs/stub-linux-arm_32
 ```
 
 ## Cross-Platform Building
@@ -221,11 +221,11 @@ echo "CAXACAXACAXA" >> stubs/stub-linux-arm_32
 ### Example: Building for Multiple Platforms
 
 ```bash
-# 1. Compile all stubs (do this once, or get them from the original caxa project)
+# 1. Compile all stubs (do this once, or get them from the original jpaxa project)
 # (See "Compiling Stubs" section above)
 
 # 2. Package for current platform
-jbang Caxa.java --input "my-app" --output "my-app" -- "{{caxa}}/app"
+jbang JPAXA.java --input "my-app" --output "my-app" -- "{{jpaxa}}/app"
 
 # 3. For other platforms, you can:
 #    - Run on that platform, OR
@@ -244,7 +244,7 @@ jbang Caxa.java --input "my-app" --output "my-app" -- "{{caxa}}/app"
 2. **Execution**:
    - The stub reads itself to find the tarball and footer
    - Extracts the tarball to a temporary directory (cached for subsequent runs)
-   - Replaces `{{caxa}}` placeholders in the command
+   - Replaces `{{jpaxa}}` placeholders in the command
    - Executes the command with the extracted files
 
 ## Examples
@@ -253,8 +253,8 @@ See the `examples/` directory for sample applications.
 
 ## License
 
-MIT (same as original caxa)
+MIT (same as original jpaxa)
 
 ## Acknowledgments
 
-This is a Java port of [caxa](https://github.com/leafac/caxa) by Leandro Facchinetti. The Go stub code is from the original caxa project.
+This is a Java port of [jpaxa](https://github.com/leafac/jpaxa) by Leandro Facchinetti. The Go stub code is from the original jpaxa project.

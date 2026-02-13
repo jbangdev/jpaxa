@@ -23,18 +23,18 @@ import (
 func main() {
 	executableFile, err := os.Executable()
 	if err != nil {
-		log.Fatalf("caxa stub: Failed to find executable: %v", err)
+		log.Fatalf("jpaxa stub: Failed to find executable: %v", err)
 	}
 
 	executable, err := os.ReadFile(executableFile)
 	if err != nil {
-		log.Fatalf("caxa stub: Failed to read executable: %v", err)
+		log.Fatalf("jpaxa stub: Failed to read executable: %v", err)
 	}
 
 	footerSeparator := []byte("\n")
 	footerIndex := bytes.LastIndex(executable, footerSeparator)
 	if footerIndex == -1 {
-		log.Fatalf("caxa stub: Failed to find footer (did you append an archive and a footer to the stub?): %v", err)
+		log.Fatalf("jpaxa stub: Failed to find footer (did you append an archive and a footer to the stub?): %v", err)
 	}
 	footerString := executable[footerIndex+len(footerSeparator):]
 	var footer struct {
@@ -43,27 +43,27 @@ func main() {
 		UncompressionMessage string   `json:"uncompressionMessage"`
 	}
 	if err := json.Unmarshal(footerString, &footer); err != nil {
-		log.Fatalf("caxa stub: Failed to parse JSON in footer: %v", err)
+		log.Fatalf("jpaxa stub: Failed to parse JSON in footer: %v", err)
 	}
 
 	var applicationDirectory string
 	for extractionAttempt := 0; true; extractionAttempt++ {
-		lock := path.Join(os.TempDir(), "caxa/locks", footer.Identifier, strconv.Itoa(extractionAttempt))
-		applicationDirectory = path.Join(os.TempDir(), "caxa/applications", footer.Identifier, strconv.Itoa(extractionAttempt))
+		lock := path.Join(os.TempDir(), "jpaxa/locks", footer.Identifier, strconv.Itoa(extractionAttempt))
+		applicationDirectory = path.Join(os.TempDir(), "jpaxa/applications", footer.Identifier, strconv.Itoa(extractionAttempt))
 		applicationDirectoryFileInfo, err := os.Stat(applicationDirectory)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			log.Fatalf("caxa stub: Failed to find information about the application directory: %v", err)
+			log.Fatalf("jpaxa stub: Failed to find information about the application directory: %v", err)
 		}
 		if err == nil && !applicationDirectoryFileInfo.IsDir() {
-			log.Fatalf("caxa stub: Path to application directory already exists and isn’t a directory: %v", err)
+			log.Fatalf("jpaxa stub: Path to application directory already exists and isn’t a directory: %v", err)
 		}
 		if err == nil && applicationDirectoryFileInfo.IsDir() {
 			lockFileInfo, err := os.Stat(lock)
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				log.Fatalf("caxa stub: Failed to find information about the lock: %v", err)
+				log.Fatalf("jpaxa stub: Failed to find information about the lock: %v", err)
 			}
 			if err == nil && !lockFileInfo.IsDir() {
-				log.Fatalf("caxa stub: Path to lock already exists and isn’t a directory: %v", err)
+				log.Fatalf("jpaxa stub: Path to lock already exists and isn’t a directory: %v", err)
 			}
 			if err == nil && lockFileInfo.IsDir() {
 				// Application directory exists and lock exists as well, so a previous extraction wasn’t successful or an extraction is happening right now and hasn’t finished yet, in either case, start over with a fresh name.
@@ -94,21 +94,21 @@ func main() {
 			}
 
 			if err := os.MkdirAll(lock, 0755); err != nil {
-				log.Fatalf("caxa stub: Failed to create the lock directory: %v", err)
+				log.Fatalf("jpaxa stub: Failed to create the lock directory: %v", err)
 			}
 
 			// The use of ‘Repeat’ below is to make it even more improbable that the separator will appear literally in the compiled stub.
-			archiveSeparator := []byte("\n" + strings.Repeat("CAXA", 3) + "\n")
+			archiveSeparator := []byte("\n" + strings.Repeat("JPAXA", 3) + "\n")
 			// Use LastIndex to ensure we find the separator appended at the end of the stub,
 			// not an earlier accidental occurrence inside the compiled binary.
 			archiveIndex := bytes.LastIndex(executable, archiveSeparator)
 			if archiveIndex == -1 {
-				log.Fatalf("caxa stub: Failed to find archive (did you append the separator when building the stub?): %v", err)
+				log.Fatalf("jpaxa stub: Failed to find archive (did you append the separator when building the stub?): %v", err)
 			}
 			archive := executable[archiveIndex+len(archiveSeparator) : footerIndex]
 
 			if err := Untar(bytes.NewReader(archive), applicationDirectory); err != nil {
-				log.Fatalf("caxa stub: Failed to uncompress archive: %v", err)
+				log.Fatalf("jpaxa stub: Failed to uncompress archive: %v", err)
 			}
 
 			os.Remove(lock)
@@ -133,7 +133,7 @@ func main() {
 	if errors.As(err, &exitError) {
 		os.Exit(exitError.ExitCode())
 	} else if err != nil {
-		log.Fatalf("caxa stub: Failed to run command: %v", err)
+		log.Fatalf("jpaxa stub: Failed to run command: %v", err)
 	}
 }
 

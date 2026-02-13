@@ -20,7 +20,7 @@ hooks:
           go build -o build/stubs/stub-{{matrix.platform}} stub.go
           {
             echo ""
-            echo "CAXACAXACAXA"
+            echo "JPAXAJPAXAJPAXA"
           } >> build/stubs/stub-{{matrix.platform}}
           echo "{{matrix.goos}} {{matrix.goarch}} {{matrix.platform}}" >> build/stubs/platforms.txt
         environment:
@@ -37,7 +37,7 @@ hooks:
 project:
   name: jpaxa
   version: 999-SNAPSHOT
-  description: A port of caxa to Java - a tool to package any runtime or script dependent applications into self-extracting executable binaries/bundles
+  description: A port of jpaxa to Java - a tool to package any runtime or script dependent applications into self-extracting executable binaries/bundles
   authors:
     - jbangdev
   license: MIT

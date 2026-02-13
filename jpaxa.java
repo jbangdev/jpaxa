@@ -37,7 +37,7 @@ import com.google.gson.Gson;
 public class jpaxa implements Runnable {
     
     private static final Pattern APP_PLACEHOLDER = Pattern.compile("\\{\\{\\s*app\\s*\\}\\}");
-    private static final byte[] ARCHIVE_SEPARATOR = ("\n" + "CAXA".repeat(3) + "\n").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] ARCHIVE_SEPARATOR = ("\n" + "JPAXA".repeat(3) + "\n").getBytes(StandardCharsets.UTF_8);
     private static final byte[] FOOTER_SEPARATOR = "\n".getBytes(StandardCharsets.UTF_8);
     
     public static void main(String[] args) {
@@ -351,7 +351,7 @@ public class jpaxa implements Runnable {
         }
         stubScript += " \"$@\"\n";
 
-        // Use split(..., -1) so trailing empty string is kept (Java drops it by default; caxa/JS does not)
+        // Use split(..., -1) so trailing empty string is kept (Java drops it by default; jpaxa/JS does not)
         stubScript = stubScript.replace("__STUB_LINES__", String.valueOf(stubScript.split("\n", -1).length));
 
         writeString(output, stubScript);
