@@ -1,6 +1,6 @@
 # Simple Java Example
 
-This example shows how to package a simple Java application with jbang-caxa.
+This example shows how to package a simple Java application with `jpaxa`.
 
 ## Steps
 
@@ -9,12 +9,12 @@ This example shows how to package a simple Java application with jbang-caxa.
    javac Hello.java
    ```
 
-2. Package it with jbang-caxa:
+2. Package it with `jpaxa`:
    ```bash
-   jbang ../../Caxa.java \
+   jpaxa \
      --input . \
      --output hello \
-     -- "java" "-cp" "{{caxa}}" "Hello" "some" "arguments"
+     -- "java" "-cp" "{{jpaxa}}" "Hello" "some" "arguments"
    ```
 
 3. Run the packaged executable:
