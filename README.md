@@ -217,7 +217,7 @@ The Java version looks for stubs in:
 2. `stubs/` directory: `stubs/stub-<platform>`
 3. JAR resources: `/stubs/stub-<platform>`
 
-You can copy the stubs from the original jpaxa project or compile them yourself.
+You can compile the stubs yourself or reuse compatible stubs from the original caxa lineage.
 
 ### Compiling stubs
 
@@ -308,4 +308,4 @@ MIT
 
 ## Acknowledgments
 
-This project is inspired by [caxa](https://github.com/leafac/caxa/tree/63f28fb7a1e62e9f08edd1a9f697e0ac5b7ecb85) by Leandro Facchinetti. The Go stub approach comes from that original project lineage.
+This project is inspired by [caxa](https://github.com/leafac/caxa/tree/63f28fb7a1e62e9f08edd1a9f697e0ac5b7ecb85) by Leandro Facchinetti. The Go stub approach comes from that same lineage.
