@@ -295,6 +295,9 @@ echo "JPAXAJPAXAJPAXA" >> stubs/stub-linux-arm_32
 
 See the `examples/` directory for sample applications.
 
+- [`examples/jbang-wrap`](./examples/jbang-wrap): package a JBang wrapper and ship a single executable
+- [`examples/simple-java`](./examples/simple-java): package a small Java application
+
 ## Limitations
 
 - first run pays extraction cost
