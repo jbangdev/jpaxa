@@ -2,6 +2,9 @@
   "aliases": {
     "jpaxa": {
       "script-ref": "jpaxa.java"
+    },
+    "jpaxa-earlyaccess": {
+      "script-ref": "https://github.com/jbangdev/jpaxa/releases/download/early-access/jpaxa.jar"
     }
   }
 }
