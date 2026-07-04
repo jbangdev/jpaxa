@@ -147,4 +147,4 @@ jobs:
       - name: Release
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: jreleaser release --git-root-search
+        run: jbang org.jreleaser:jreleaser-cli:1.24.0 release --git-root-search
