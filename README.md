@@ -55,13 +55,13 @@ jpaxa build my-java-app -- "java" "-jar" "{{app}}/app.jar"
 jpaxa build my-node-app -- "node" "{{app}}/index.js"
 ```
 
-### Package a Python app
+### Package a Python app (requires system Python on target)
 
 ```bash
 jpaxa build my-python-app -- "python3" "{{app}}/main.py"
 ```
 
-If the target machine does not have Python installed, bundle a Python runtime inside the input directory and launch that bundled interpreter instead. See [Self-contained Python](#self-contained-python).
+This bundles your code but relies on the target having Python installed. See [Python apps](#python-apps) for details on why bundling the interpreter is non-trivial.
 
 ## Why jpaxa
 
@@ -166,33 +166,19 @@ The Go stubs are cross-compiled for all six platform variants. The Java packager
 
 **Limitation:** When building Unix-targeted binaries on Windows, POSIX executable bits may not be preserved. Build Unix targets on a Unix runner for best results.
 
-## Self-contained Python
+## Python apps
 
-jpaxa can make a Python application self-contained if you bundle the Python runtime inside the input directory.
-
-**If the target has Python installed:**
+If the target machine has Python installed, jpaxa can package a Python app:
 
 ```bash
 jpaxa build my-python-app -- "python3" "{{app}}/main.py"
 ```
 
-**If the target does not have Python**, prepare a directory that includes the interpreter:
+This relies on the system `python3`. The app itself is bundled, but the interpreter is not.
 
-```text
-my-python-bundle/
-  python/bin/python3
-  app/main.py
-```
+Bundling a Python interpreter inside jpaxa is harder than it sounds. A bare `python3` binary won't work — Python needs its standard library (`lib/pythonX.Y/`), and the binary is typically dynamically linked against `libpython`, `libssl`, `libffi`, and other system libraries. You'd need a relocatable Python distribution like [python-build-standalone](https://github.com/indygreg/python-build-standalone), with the stdlib and any pip dependencies included, built for each target platform.
 
-```bash
-# macOS / Linux
-jpaxa build my-python-bundle -- "{{app}}/python/bin/python3" "{{app}}/app/main.py"
-
-# Windows
-jpaxa build my-python-bundle -o my-tool.exe -- "{{app}}/python/python.exe" "{{app}}/app/main.py"
-```
-
-A self-contained Python bundle is platform-specific — you need separate builds for Windows, macOS, and Linux.
+If you need a fully self-contained Python executable, tools like [PyInstaller](https://pyinstaller.org), [Nuitka](https://nuitka.net), or [PyOxidizer](https://pyoxidizer.readthedocs.io) are purpose-built for that problem.
 
 ## Comparison
 
