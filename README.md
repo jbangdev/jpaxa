@@ -55,14 +55,6 @@ jpaxa build my-java-app -- "java" "-jar" "{{app}}/app.jar"
 jpaxa build my-node-app -- "node" "{{app}}/index.js"
 ```
 
-### Package a Python app (requires system Python on target)
-
-```bash
-jpaxa build my-python-app -- "python3" "{{app}}/main.py"
-```
-
-This bundles your code but relies on the target having Python installed. See [Python apps](#python-apps) for details on why bundling the interpreter is non-trivial.
-
 ## Why jpaxa
 
 Sometimes you do not want a full installer, container packaging, GraalVM native-image complexity, or users manually unpacking archives. You just want **one file** that **runs on the target platform** while keeping the app's normal runtime and file layout.
@@ -165,20 +157,6 @@ jpaxa build my-app --variants all -- "{{app}}/run.sh"
 The Go stubs are cross-compiled for all six platform variants. The Java packager runs anywhere with Java 17+.
 
 **Limitation:** When building Unix-targeted binaries on Windows, POSIX executable bits may not be preserved. Build Unix targets on a Unix runner for best results.
-
-## Python apps
-
-If the target machine has Python installed, jpaxa can package a Python app:
-
-```bash
-jpaxa build my-python-app -- "python3" "{{app}}/main.py"
-```
-
-This relies on the system `python3`. The app itself is bundled, but the interpreter is not.
-
-Bundling a Python interpreter inside jpaxa is harder than it sounds. A bare `python3` binary won't work — Python needs its standard library (`lib/pythonX.Y/`), and the binary is typically dynamically linked against `libpython`, `libssl`, `libffi`, and other system libraries. You'd need a relocatable Python distribution like [python-build-standalone](https://github.com/indygreg/python-build-standalone), with the stdlib and any pip dependencies included, built for each target platform.
-
-If you need a fully self-contained Python executable, tools like [PyInstaller](https://pyinstaller.org), [Nuitka](https://nuitka.net), or [PyOxidizer](https://pyoxidizer.readthedocs.io) are purpose-built for that problem.
 
 ## Comparison
 
